@@ -1,0 +1,31 @@
+# 忽略编译产物和二进制文件
+[Dd]ebug/
+[Dd]ebug_x64/
+[Dd]ebug_x86/
+[Dd]Release/
+[Dd]Release_x64/
+[Dd]Release_x86/
+
+# 忽略 Visual Studio 特定文件
+.vs/
+*.user
+*.suo
+*.sdf
+*.dbmdl
+
+# 忽略其他临时文件
+*.log
+*.bak
+*.swp
+*.tmp
+
+# 忽略 C++ 对象文件、库和可执行文件
+*.obj
+#*.exe
+*.dll
+*.lib
+*.pdb
+*.idb
+
+*.ipch
+ipch/
