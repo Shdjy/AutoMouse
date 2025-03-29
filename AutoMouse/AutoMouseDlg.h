@@ -6,12 +6,19 @@
 #include <vector>
 #include <chrono>
 #include <thread>
+#include <string.h>
+#include <atomic>
+#include <conio.h>
+#include "tinyxml2.h"
 
+#define HOTKEY_ID 1001  // 热键ID
+using namespace tinyxml2;
 
 struct MouseInfo
 {
 	CPoint m_point;
 	ULONGLONG m_time;
+	CString m_title;
 };
 
 // CAutoMouseDlg 对话框
@@ -20,6 +27,7 @@ class CAutoMouseDlg : public CDialogEx
 // 构造
 public:
 	CAutoMouseDlg(CWnd* pParent = nullptr);	// 标准构造函数
+	~CAutoMouseDlg();
 
 // 对话框数据
 #ifdef AFX_DESIGN_TIME
@@ -52,6 +60,16 @@ public:
 	afx_msg void OnBnClickedOk();
 	CButton m_startOrStop;
 	afx_msg void OnBnClickedCancel3();
-	void click(MouseInfo info);
+	bool click(MouseInfo info);
 	bool SaveMouseInfo();
+	afx_msg void OnBnClickedCancel2();
+	 bool LoadChooseFile();
+	 virtual void OnCancel();
+	 afx_msg void OnBnClickedCancel4();
+	 void OnHotKey(UINT nHotKeyId, UINT nKey1, UINT nKey2);
+
+	 std::atomic<bool> m_stopClicking;
+	 void AutoClickThred();
+	 CStatic m_showChoose;
 };
+
