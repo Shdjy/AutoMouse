@@ -200,7 +200,10 @@ LRESULT CALLBACK CAutoMouseDlg::MouseProc(int nCode, WPARAM wParam, LPARAM lPara
 			title = windowTitle;
 			// 计算时间间隔
 			ULONGLONG interval = (m_pThis->m_lastClickTime == 0) ? 0 : (currentTime - m_pThis->m_lastClickTime);
-
+			if (m_pThis->m_clickPoints.size() == 0)
+			{
+				interval = 0;
+			}
 			// 更新上次点击时间
 			m_pThis->m_lastClickTime = currentTime;
 
@@ -450,7 +453,7 @@ void CAutoMouseDlg::AutoClickThred()
 {
 	if (m_clickPoints.size() > 0)
 	{
-		for (const auto& point : m_clickPoints)
+		for (size_t i = 0; i < m_clickPoints.size(); i++)//(const auto& point : m_clickPoints)
 		{
 			if (m_stopClicking)  // 检测停止标志
 			{
@@ -458,8 +461,8 @@ void CAutoMouseDlg::AutoClickThred()
 				return;
 			}
 
-			click(point);
-			std::this_thread::sleep_for(std::chrono::milliseconds(point.m_time)); 
+			click(m_clickPoints[i]);
+			std::this_thread::sleep_for(std::chrono::milliseconds(m_clickPoints.at((i+1) % m_clickPoints.size()).m_time)); 
 		}
 		AfxMessageBox(_T("点击操作完成！"));
 	}
