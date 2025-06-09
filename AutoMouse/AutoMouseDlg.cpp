@@ -193,7 +193,7 @@ LRESULT CALLBACK CAutoMouseDlg::MouseProc(int nCode, WPARAM wParam, LPARAM lPara
 				//AfxMessageBox(_T("over!"));
 				return CallNextHookEx(nullptr, nCode, wParam, lParam);
 			}
-			ULONGLONG currentTime = GetTickCount64();  // 获取当前时间
+			ULONGLONG currentTime = GetTickCount();  // 获取当前时间
 			CString title;
 			TCHAR windowTitle[256];
 			::GetWindowText(hWndClicked, windowTitle, 256);
