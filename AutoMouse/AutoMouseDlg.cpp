@@ -69,6 +69,7 @@ void CAutoMouseDlg::DoDataExchange(CDataExchange* pDX)
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDOK, m_startOrStop);
 	DDX_Control(pDX, IDC_STATIC_TIT, m_showChoose);
+	DDX_Control(pDX, IDCANCEL3, m_execute);
 }
 
 BEGIN_MESSAGE_MAP(CAutoMouseDlg, CDialogEx)
@@ -239,7 +240,15 @@ void CAutoMouseDlg::OnBnClickedOk()
 			//AfxMessageBox(_T("停止录制鼠标点击！"));
 			m_isRecording = false;
 			//保存数据
-			SaveMouseInfo();
+			if (SaveMouseInfo())
+			{
+				m_showChoose.SetWindowText(m_showText);
+				AfxMessageBox(_T("数据保存成功！"));
+			}
+			else
+			{
+				AfxMessageBox(_T("数据保存失败！"));
+			}
 			m_startOrStop.SetWindowText(_T("开始录制"));
 		}
 	}
@@ -255,18 +264,6 @@ void CAutoMouseDlg::OnBnClickedCancel3()
 	// 创建点击线程
 	std::thread clickThread(&CAutoMouseDlg::AutoClickThred, this);
 	clickThread.detach();
-	//if (m_clickPoints.size() > 0)
-	//{
-	//	for (const auto& point : m_clickPoints)
-	//	{
-	//		click(point);
-	//		std::this_thread::sleep_for(std::chrono::milliseconds(point.m_time)); // 延迟
-	//	}
-	//}
-	//else
-	//{
-	//	AfxMessageBox(_T("没有录制任何鼠标点击！"));
-	//}
 }
 
 bool CAutoMouseDlg::click(MouseInfo info)
@@ -277,28 +274,6 @@ bool CAutoMouseDlg::click(MouseInfo info)
 	mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);    // 鼠标左键松开
 	return true;
 }
-/*POINT pt = info.m_point;
-HWND hWndClicked = ::WindowFromPoint(pt);
-if (hWndClicked == m_pThis->GetSafeHwnd() || ::IsChild(m_pThis->GetSafeHwnd(), hWndClicked))
-{
-	return false;
-}
-CString title;
-TCHAR windowTitle[256];
-::GetWindowText(hWndClicked, windowTitle, 256);
-title = windowTitle;*/
-//if (title == info.m_title)
-//{
-//	mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);  // 鼠标左键按下
-//	std::this_thread::sleep_for(std::chrono::milliseconds(50)); // 延迟
-//	mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);    // 鼠标左键松开
-//	return true;
-//}
-//else
-//{
-//	return false;
-//}	
-
 
 bool CAutoMouseDlg::SaveMouseInfo()
 {
@@ -306,53 +281,19 @@ bool CAutoMouseDlg::SaveMouseInfo()
 	{
 		CFileDialog dlg(FALSE, _T("xml"), _T("MouseData.xml"),
 			OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
-			_T("XML文件 (*.xml)|*.xml||"));
+			_T("支持文件 (*.xml;*.txt)|*.xml;*.txt|XML (*.xml)|*.xml|TXT (*.txt)|*.txt||"));
 		if (dlg.DoModal() == IDOK)
 		{
 			CString filePath = dlg.GetPathName();
 			CString fileName = dlg.GetFileName();
-			// 创建XML文档
-			tinyxml2::XMLDocument doc;
-			XMLElement* root = doc.NewElement("MouseData");
-			doc.InsertFirstChild(root);
-
-			for (const auto& info : m_clickPoints)
-			{
-				XMLElement* clickElement = doc.NewElement("Click");
-
-				XMLElement* xElement = doc.NewElement("X");
-				xElement->SetText(info.m_point.x);
-				clickElement->InsertEndChild(xElement);
-
-				XMLElement* yElement = doc.NewElement("Y");
-				yElement->SetText(info.m_point.y);
-				clickElement->InsertEndChild(yElement);
-
-				XMLElement* intervalElement = doc.NewElement("Interval");
-				intervalElement->SetText(info.m_time);
-				clickElement->InsertEndChild(intervalElement);
-
-				XMLElement* titleElement = doc.NewElement("Title");
-				titleElement->SetText(CT2A(info.m_title));
-				clickElement->InsertEndChild(titleElement);
-
-				root->InsertEndChild(clickElement);
-			}
-
-			if (doc.SaveFile(CT2A(filePath)) == XML_SUCCESS)
-			{
-				//AfxMessageBox(_T("数据保存成功！"));
-				m_showChoose.SetWindowText(_T("当前操作：") + fileName);
-				return true;
-			}
-			else
-			{
-				//AfxMessageBox(_T("保存失败！"));
-				return FALSE;
-			}
+			std::unique_ptr<FileIO> fileIO = GetFileExtension(fileName);
+			m_showText = _T("操作：") + fileName;
+			return fileIO->SaveFile(filePath, m_clickPoints);
 		}
 	}
+	return false;
 }
+
 
 void CAutoMouseDlg::OnBnClickedCancel2()
 {
@@ -373,57 +314,36 @@ bool CAutoMouseDlg::LoadChooseFile()
 	// 创建文件打开对话框
 	CFileDialog dlg(TRUE, _T("xml"), nullptr,
 		OFN_HIDEREADONLY | OFN_FILEMUSTEXIST,
-		_T("XML文件 (*.xml)|*.xml||"));
+		_T("支持文件 (*.xml;*.txt)|*.xml;*.txt|XML (*.xml)|*.xml|TXT (*.txt)|*.txt||"));
 	if (dlg.DoModal() == IDOK)
 	{
 		CString filePath = dlg.GetPathName();
 		CString fileName = dlg.GetFileName();
-		tinyxml2::XMLDocument doc;
-
-		if (doc.LoadFile(CT2A(filePath)) != XML_SUCCESS)
-		{
-			AfxMessageBox(_T("文件打开失败或格式错误！"));
-			return false;
-		}
-
 		m_clickPoints.clear();  // 清空原有数据
-		XMLElement* root = doc.FirstChildElement("MouseData");
-		if (!root)
-		{
-			AfxMessageBox(_T("XML文件格式错误！"));
-			return false;
-		}
 
-		for (XMLElement* clickElement = root->FirstChildElement("Click");
-			clickElement != nullptr;
-			clickElement = clickElement->NextSiblingElement("Click"))
-		{
-			MouseInfo info;
-			XMLElement* xElement = clickElement->FirstChildElement("X");
-			XMLElement* yElement = clickElement->FirstChildElement("Y");
-			XMLElement* intervalElement = clickElement->FirstChildElement("Interval");
-			XMLElement* titleElement = clickElement->FirstChildElement("Title");
-
-			if (xElement && yElement && intervalElement && titleElement)
-			{
-				int x, y;
-				xElement->QueryIntText(&x);
-				yElement->QueryIntText(&y);
-				intervalElement->QueryUnsigned64Text(&info.m_time);
-				info.m_title = titleElement->GetText();
-
-				// 将int值转换为LONG类型
-				info.m_point.x = static_cast<LONG>(x);
-				info.m_point.y = static_cast<LONG>(y);
-				m_clickPoints.push_back(info);
-			}
-		}
-		CString showText = _T("当前操作：") + fileName;
-		m_showChoose.SetWindowText(showText);
-		//AfxMessageBox(_T("数据加载成功！"));
-		return true;
+		std::unique_ptr<FileIO> fileIO = GetFileExtension(fileName);
+		m_showText = _T("操作：") + fileName;
+		return fileIO->LoadFile(filePath, m_clickPoints);
 	}
 	return false;
+}
+
+
+std::unique_ptr<FileIO> CAutoMouseDlg::GetFileExtension(const CString& fileName)
+{
+	int dotPos = fileName.ReverseFind('.');
+	if (dotPos != -1 && dotPos < fileName.GetLength() - 1)
+	{
+		if (fileName.Mid(dotPos + 1).MakeLower() == _T("xml"))// 转换为小写
+		{
+			return std::unique_ptr<FileIO>(new XMLFileIO());
+		}
+		else if (fileName.Mid(dotPos + 1).MakeLower() == _T("txt"))
+		{
+			return std::unique_ptr<FileIO>(new TXTFileIO());
+		}
+	}
+	return nullptr;
 }
 
 
@@ -437,7 +357,10 @@ void CAutoMouseDlg::OnCancel()
 void CAutoMouseDlg::OnBnClickedCancel4()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	LoadChooseFile();
+	if (LoadChooseFile())
+	{
+		m_showChoose.SetWindowText(m_showText);
+	}
 }
 
 void CAutoMouseDlg::OnHotKey(UINT nHotKeyId, UINT nKey1, UINT nKey2)
@@ -445,7 +368,7 @@ void CAutoMouseDlg::OnHotKey(UINT nHotKeyId, UINT nKey1, UINT nKey2)
 	if (nHotKeyId == HOTKEY_ID)  // 判断是否为自定义热键
 	{
 		m_stopClicking = true;  // 设置停止标志
-		//AfxMessageBox(_T("点击操作已中断！"));
+		g_cv.notify_all();
 	}
 }
 
@@ -453,6 +376,7 @@ void CAutoMouseDlg::AutoClickThred()
 {
 	if (m_clickPoints.size() > 0)
 	{
+		m_execute.SetWindowText(_T("执行中"));
 		for (size_t i = 0; i < m_clickPoints.size(); i++)//(const auto& point : m_clickPoints)
 		{
 			if (m_stopClicking)  // 检测停止标志
@@ -462,9 +386,18 @@ void CAutoMouseDlg::AutoClickThred()
 			}
 
 			click(m_clickPoints[i]);
-			std::this_thread::sleep_for(std::chrono::milliseconds(m_clickPoints.at((i+1) % m_clickPoints.size()).m_time)); 
+			std::unique_lock<std::mutex> lock(g_mtx);
+			if (g_cv.wait_for(lock,
+				std::chrono::milliseconds(m_clickPoints[(i + 1) % m_clickPoints.size()].m_time),
+				[&]() { return m_stopClicking.load(); }))
+			{
+				m_execute.SetWindowText(_T("执行操作"));
+				AfxMessageBox(_T("点击操作已中断！"));
+				return;
+			}
 		}
-		AfxMessageBox(_T("点击操作完成！"));
+		//AfxMessageBox(_T("点击操作完成！"));
+		m_execute.SetWindowText(_T("执行操作"));
 	}
 	else
 	{

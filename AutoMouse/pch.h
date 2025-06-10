@@ -9,5 +9,11 @@
 
 // 添加要在此处预编译的标头
 #include "framework.h"
-
+#include <memory>
+#include <condition_variable>
+#include <mutex>
+#include "tinyxml2.h"
+#include "TXTFileIO.h"
+#include "XMLFileIO.h"
+using namespace tinyxml2;
 #endif //PCH_H

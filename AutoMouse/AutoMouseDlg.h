@@ -1,44 +1,35 @@
 ﻿
 // AutoMouseDlg.h: 头文件
 //
-
 #pragma once
-#include <vector>
 #include <chrono>
 #include <thread>
 #include <string.h>
 #include <atomic>
 #include <conio.h>
-#include "tinyxml2.h"
+
+#include "FileIO.h"
 
 #define HOTKEY_ID 1001  // 热键ID
-using namespace tinyxml2;
-
-struct MouseInfo
-{
-	CPoint m_point;
-	ULONGLONG m_time;
-	CString m_title;
-};
 
 // CAutoMouseDlg 对话框
 class CAutoMouseDlg : public CDialogEx
 {
-// 构造
+	// 构造
 public:
 	CAutoMouseDlg(CWnd* pParent = nullptr);	// 标准构造函数
 	~CAutoMouseDlg();
 
-// 对话框数据
+	// 对话框数据
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_AUTOMOUSE_DIALOG };
 #endif
 
-	protected:
+protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV 支持
 
 
-// 实现
+	// 实现
 protected:
 	HICON m_hIcon;
 
@@ -63,13 +54,18 @@ public:
 	bool click(MouseInfo info);
 	bool SaveMouseInfo();
 	afx_msg void OnBnClickedCancel2();
-	 bool LoadChooseFile();
-	 virtual void OnCancel();
-	 afx_msg void OnBnClickedCancel4();
-	 void OnHotKey(UINT nHotKeyId, UINT nKey1, UINT nKey2);
+	bool LoadChooseFile();
+	std::unique_ptr<FileIO> GetFileExtension(const CString& fileName);
+	virtual void OnCancel();
+	afx_msg void OnBnClickedCancel4();
+	void OnHotKey(UINT nHotKeyId, UINT nKey1, UINT nKey2);
 
-	 std::atomic<bool> m_stopClicking;
-	 void AutoClickThred();
-	 CStatic m_showChoose;
+	std::atomic<bool> m_stopClicking;
+	void AutoClickThred();
+	CStatic m_showChoose;
+	CString m_showText;
+	std::condition_variable g_cv;
+	std::mutex g_mtx;
+	CButton m_execute;
 };
 
