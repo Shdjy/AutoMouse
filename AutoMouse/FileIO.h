@@ -4,6 +4,7 @@
 struct MouseInfo
 {
 	CPoint m_point;
+	int m_event;
 	ULONGLONG m_time;
 	CString m_title;
 };

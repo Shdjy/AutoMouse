@@ -1,4 +1,7 @@
 D:\code for github\AutoMouse\AutoMouse\AutoMouse.cpp;D:\code for github\AutoMouse\AutoMouse\x64\Release\AutoMouse.obj
 D:\code for github\AutoMouse\AutoMouse\AutoMouseDlg.cpp;D:\code for github\AutoMouse\AutoMouse\x64\Release\AutoMouseDlg.obj
+D:\code for github\AutoMouse\AutoMouse\FileIO.cpp;D:\code for github\AutoMouse\AutoMouse\x64\Release\FileIO.obj
 D:\code for github\AutoMouse\AutoMouse\pch.cpp;D:\code for github\AutoMouse\AutoMouse\x64\Release\pch.obj
 D:\code for github\AutoMouse\AutoMouse\tinyxml2.cpp;D:\code for github\AutoMouse\AutoMouse\x64\Release\tinyxml2.obj
+D:\code for github\AutoMouse\AutoMouse\TXTFileIO.cpp;D:\code for github\AutoMouse\AutoMouse\x64\Release\TXTFileIO.obj
+D:\code for github\AutoMouse\AutoMouse\XMLFileIO.cpp;D:\code for github\AutoMouse\AutoMouse\x64\Release\XMLFileIO.obj

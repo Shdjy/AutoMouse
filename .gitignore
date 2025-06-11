@@ -5,6 +5,7 @@
 [Dd]Release/
 [Dd]Release_x64/
 [Dd]Release_x86/
+AutoMouse/x64/Release/
 
 # 忽略 Visual Studio 特定文件
 .vs/

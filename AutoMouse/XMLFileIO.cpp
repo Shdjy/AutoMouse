@@ -20,6 +20,10 @@ bool XMLFileIO::SaveFile(CString filename, std::vector<MouseInfo> points)
 		yElement->SetText(info.m_point.y);
 		clickElement->InsertEndChild(yElement);
 
+		XMLElement* eventElement = doc.NewElement("Event");
+		eventElement->SetText(info.m_event);
+		clickElement->InsertEndChild(eventElement);
+
 		XMLElement* intervalElement = doc.NewElement("Interval");
 		intervalElement->SetText(info.m_time);
 		clickElement->InsertEndChild(intervalElement);
@@ -69,14 +73,16 @@ bool XMLFileIO::LoadFile(CString filename, std::vector<MouseInfo>& points)
 		MouseInfo info;
 		XMLElement* xElement = clickElement->FirstChildElement("X");
 		XMLElement* yElement = clickElement->FirstChildElement("Y");
+		XMLElement* eventElement = clickElement->FirstChildElement("Event");
 		XMLElement* intervalElement = clickElement->FirstChildElement("Interval");
 		XMLElement* titleElement = clickElement->FirstChildElement("Title");
 
-		if (xElement && yElement && intervalElement && titleElement)
+		if (xElement && yElement && eventElement && intervalElement && titleElement)
 		{
 			int x, y;
 			xElement->QueryIntText(&x);
 			yElement->QueryIntText(&y);
+			eventElement->QueryIntText(&info.m_event);
 			intervalElement->QueryUnsigned64Text(&info.m_time);
 			info.m_title = titleElement->GetText();
 

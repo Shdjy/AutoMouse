@@ -178,15 +178,13 @@ HCURSOR CAutoMouseDlg::OnQueryDragIcon()
 
 LRESULT CALLBACK CAutoMouseDlg::MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
-	if (nCode >= 0 && wParam == WM_LBUTTONDOWN)
+	if (nCode >= 0 && (wParam == WM_LBUTTONDOWN || wParam == WM_RBUTTONDOWN))
 	{
 		MSLLHOOKSTRUCT* pMouseStruct = (MSLLHOOKSTRUCT*)lParam;
 		if (pMouseStruct != nullptr && m_pThis != nullptr)
 		{
 			// 获取点击位置
 			POINT pt = pMouseStruct->pt;
-
-
 			// 忽略点击MFC窗口本身
 			HWND hWndClicked = ::WindowFromPoint(pt);
 			if (hWndClicked == m_pThis->GetSafeHwnd() || ::IsChild(m_pThis->GetSafeHwnd(), hWndClicked))
@@ -194,6 +192,8 @@ LRESULT CALLBACK CAutoMouseDlg::MouseProc(int nCode, WPARAM wParam, LPARAM lPara
 				//AfxMessageBox(_T("over!"));
 				return CallNextHookEx(nullptr, nCode, wParam, lParam);
 			}
+			int event = wParam;
+
 			ULONGLONG currentTime = GetTickCount();  // 获取当前时间
 			CString title;
 			TCHAR windowTitle[256];
@@ -205,11 +205,25 @@ LRESULT CALLBACK CAutoMouseDlg::MouseProc(int nCode, WPARAM wParam, LPARAM lPara
 			{
 				interval = 0;
 			}
+			else
+			{
+				if (event == WM_LBUTTONDOWN)
+				{
+					if (interval < GetDoubleClickTime() && abs(pt.x - m_pThis->m_clickPoints.back().m_point.x) < GetSystemMetrics(SM_CXDOUBLECLK) 
+						&& abs(pt.y - m_pThis->m_clickPoints.back().m_point.y) < GetSystemMetrics(SM_CYDOUBLECLK))
+					{
+						interval += m_pThis->m_clickPoints.back().m_time;
+						m_pThis->m_clickPoints.pop_back();
+						event = WM_LBUTTONDBLCLK;
+					}
+				}
+				
+			}
 			// 更新上次点击时间
 			m_pThis->m_lastClickTime = currentTime;
 
 			// 记录点击数据
-			MouseInfo info = { pt, interval, title };
+			MouseInfo info = { pt, event, interval, title };
 			m_pThis->m_clickPoints.push_back(info);
 		}
 	}
@@ -269,9 +283,34 @@ void CAutoMouseDlg::OnBnClickedCancel3()
 bool CAutoMouseDlg::click(MouseInfo info)
 {
 	SetCursorPos(info.m_point.x, info.m_point.y);           // 移动鼠标到指定位置
-	mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);  // 鼠标左键按下
-	std::this_thread::sleep_for(std::chrono::milliseconds(50)); // 延迟
-	mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);    // 鼠标左键松开
+	switch (info.m_event)
+	{
+	case WM_LBUTTONDOWN:
+		// 左键单击
+		mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+		std::this_thread::sleep_for(std::chrono::milliseconds(50));
+		mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+		break;
+
+	case WM_LBUTTONDBLCLK:
+		// 左键双击 = 两次快速单击
+		for (int i = 0; i < 2; ++i)
+		{
+			mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+			mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+			std::this_thread::sleep_for(std::chrono::milliseconds(100)); // 间隔需足够短
+		}
+		break;
+
+	case WM_RBUTTONDOWN:
+		// 右键单击
+		mouse_event(MOUSEEVENTF_RIGHTDOWN, 0, 0, 0, 0);
+		std::this_thread::sleep_for(std::chrono::milliseconds(50));
+		mouse_event(MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0);
+		break;
+	}
+
 	return true;
 }
 
@@ -381,6 +420,7 @@ void CAutoMouseDlg::AutoClickThred()
 		{
 			if (m_stopClicking)  // 检测停止标志
 			{
+				m_execute.SetWindowText(_T("执行操作"));
 				AfxMessageBox(_T("点击操作已中断！"));
 				return;
 			}
