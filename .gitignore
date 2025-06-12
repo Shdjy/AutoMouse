@@ -31,3 +31,4 @@ AutoMouse/x64/Release/
 *.ipch
 ipch/
 AutoMouse/x64/Release/AutoMouse.pch
+/AutoMouse/x64
