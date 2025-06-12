@@ -3,6 +3,7 @@
 
 struct MouseInfo
 {
+	CPoint m_downPoint;
 	CPoint m_point;
 	int m_event;
 	ULONGLONG m_time;

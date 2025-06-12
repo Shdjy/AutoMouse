@@ -12,6 +12,14 @@ bool XMLFileIO::SaveFile(CString filename, std::vector<MouseInfo> points)
 	{
 		XMLElement* clickElement = doc.NewElement("Click");
 
+		XMLElement* DXElement = doc.NewElement("DX");
+		DXElement->SetText(info.m_downPoint.x);
+		clickElement->InsertEndChild(DXElement);
+
+		XMLElement* DYElement = doc.NewElement("DY");
+		DYElement->SetText(info.m_downPoint.y);
+		clickElement->InsertEndChild(DYElement);
+
 		XMLElement* xElement = doc.NewElement("X");
 		xElement->SetText(info.m_point.x);
 		clickElement->InsertEndChild(xElement);
@@ -71,15 +79,21 @@ bool XMLFileIO::LoadFile(CString filename, std::vector<MouseInfo>& points)
 		clickElement = clickElement->NextSiblingElement("Click"))
 	{
 		MouseInfo info;
+		XMLElement* DXElement = clickElement->FirstChildElement("DX");
+		XMLElement* DYElement = clickElement->FirstChildElement("DY");
 		XMLElement* xElement = clickElement->FirstChildElement("X");
 		XMLElement* yElement = clickElement->FirstChildElement("Y");
 		XMLElement* eventElement = clickElement->FirstChildElement("Event");
 		XMLElement* intervalElement = clickElement->FirstChildElement("Interval");
 		XMLElement* titleElement = clickElement->FirstChildElement("Title");
 
-		if (xElement && yElement && eventElement && intervalElement && titleElement)
+		if (DXElement && DYElement && xElement && yElement && eventElement && intervalElement && titleElement)
 		{
-			int x, y;
+			int dx, dy, x, y;
+			DXElement->QueryIntText(&dx);
+			DYElement->QueryIntText(&dy);
+			info.m_downPoint.x = static_cast<LONG>(dx);
+			info.m_downPoint.y = static_cast<LONG>(dy);
 			xElement->QueryIntText(&x);
 			yElement->QueryIntText(&y);
 			eventElement->QueryIntText(&info.m_event);

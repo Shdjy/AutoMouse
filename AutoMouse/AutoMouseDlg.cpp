@@ -178,18 +178,22 @@ HCURSOR CAutoMouseDlg::OnQueryDragIcon()
 
 LRESULT CALLBACK CAutoMouseDlg::MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
-	if (nCode >= 0 && (wParam == WM_LBUTTONDOWN || wParam == WM_RBUTTONDOWN))
+	if (nCode >= 0 && (wParam == WM_LBUTTONDOWN || wParam == WM_RBUTTONDOWN || wParam == WM_LBUTTONUP || wParam == WM_RBUTTONUP))
 	{
 		MSLLHOOKSTRUCT* pMouseStruct = (MSLLHOOKSTRUCT*)lParam;
 		if (pMouseStruct != nullptr && m_pThis != nullptr)
 		{
-			// 获取点击位置
 			POINT pt = pMouseStruct->pt;
+			if (wParam == WM_LBUTTONDOWN || wParam == WM_RBUTTONDOWN)
+			{
+				m_pThis->m_downPoint = pt;
+				return CallNextHookEx(nullptr, nCode, wParam, lParam);
+			}
+
 			// 忽略点击MFC窗口本身
 			HWND hWndClicked = ::WindowFromPoint(pt);
 			if (hWndClicked == m_pThis->GetSafeHwnd() || ::IsChild(m_pThis->GetSafeHwnd(), hWndClicked))
 			{
-				//AfxMessageBox(_T("over!"));
 				return CallNextHookEx(nullptr, nCode, wParam, lParam);
 			}
 			int event = wParam;
@@ -207,9 +211,9 @@ LRESULT CALLBACK CAutoMouseDlg::MouseProc(int nCode, WPARAM wParam, LPARAM lPara
 			}
 			else
 			{
-				if (event == WM_LBUTTONDOWN)
+				if (event == WM_LBUTTONUP)
 				{
-					if (interval < GetDoubleClickTime() && abs(pt.x - m_pThis->m_clickPoints.back().m_point.x) < GetSystemMetrics(SM_CXDOUBLECLK) 
+					if (interval < GetDoubleClickTime() && abs(pt.x - m_pThis->m_clickPoints.back().m_point.x) < GetSystemMetrics(SM_CXDOUBLECLK)
 						&& abs(pt.y - m_pThis->m_clickPoints.back().m_point.y) < GetSystemMetrics(SM_CYDOUBLECLK))
 					{
 						interval += m_pThis->m_clickPoints.back().m_time;
@@ -217,13 +221,20 @@ LRESULT CALLBACK CAutoMouseDlg::MouseProc(int nCode, WPARAM wParam, LPARAM lPara
 						event = WM_LBUTTONDBLCLK;
 					}
 				}
-				
+			}
+			if (event == WM_LBUTTONUP)
+			{
+				if (abs(pt.x - m_pThis->m_downPoint.x) > GetSystemMetrics(SM_CXDOUBLECLK)
+					&& abs(pt.y - m_pThis->m_downPoint.y) > GetSystemMetrics(SM_CYDOUBLECLK))
+				{
+					event = MOVE;
+				}
 			}
 			// 更新上次点击时间
 			m_pThis->m_lastClickTime = currentTime;
 
 			// 记录点击数据
-			MouseInfo info = { pt, event, interval, title };
+			MouseInfo info = { m_pThis->m_downPoint, pt, event, interval, title };
 			m_pThis->m_clickPoints.push_back(info);
 		}
 	}
@@ -282,10 +293,10 @@ void CAutoMouseDlg::OnBnClickedCancel3()
 
 bool CAutoMouseDlg::click(MouseInfo info)
 {
-	SetCursorPos(info.m_point.x, info.m_point.y);           // 移动鼠标到指定位置
+	SetCursorPos(info.m_downPoint.x, info.m_downPoint.y);           // 移动鼠标到指定位置
 	switch (info.m_event)
 	{
-	case WM_LBUTTONDOWN:
+	case WM_LBUTTONUP:
 		// 左键单击
 		mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
 		std::this_thread::sleep_for(std::chrono::milliseconds(50));
@@ -303,11 +314,25 @@ bool CAutoMouseDlg::click(MouseInfo info)
 		}
 		break;
 
-	case WM_RBUTTONDOWN:
+	case WM_RBUTTONUP:
 		// 右键单击
 		mouse_event(MOUSEEVENTF_RIGHTDOWN, 0, 0, 0, 0);
 		std::this_thread::sleep_for(std::chrono::milliseconds(50));
 		mouse_event(MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0);
+		break;
+
+	case MOVE:
+		mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+		SetCursorPos(info.m_point.x, info.m_point.y);
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+		break;
+
+	default:
+		mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+		std::this_thread::sleep_for(std::chrono::milliseconds(50));
+		mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
 		break;
 	}
 

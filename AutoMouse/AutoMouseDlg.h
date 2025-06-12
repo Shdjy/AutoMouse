@@ -11,6 +11,7 @@
 #include "FileIO.h"
 
 #define HOTKEY_ID 1001  // 热键ID
+#define MOVE      1314
 
 // CAutoMouseDlg 对话框
 class CAutoMouseDlg : public CDialogEx
@@ -67,5 +68,6 @@ public:
 	std::condition_variable g_cv;
 	std::mutex g_mtx;
 	CButton m_execute;
+	POINT m_downPoint;
 };
 
